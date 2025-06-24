@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .feedback-container {
+            max-width: 350px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: #3a7bc8 2px solid;
+        }
+        .feedback-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .feedback-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #333;
+            text-align: center;
+        }
+        .rating-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .emoji-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.3rem;
+            font-size: 2.2rem;
+            transition: transform 0.2s;
+        }
+        .emoji-btn.active,
+        .emoji-btn:hover,
+        .emoji-btn.hovered {
+            filter: grayscale(0);
+            transform: scale(2.2);
+        }
+        .emoji-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #555;
+            text-align: center;
+            margin-top: 0.2rem;
+        }
+        .feedback-textarea {
+            width: 90%;
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .feedback-textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+        .feedback-submit {
+            padding: 0.75rem 1.5rem;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .feedback-submit:hover {
+            background-color: #3a7bc8;
+        }
+        .feedback-submit:active {
+            transform: scale(0.98);
+        }
+        .feedback-submit:disabled {
+            background-color: #b0c4de;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .feedback-error {
+            color: #e74c3c;
+            margin: -0.5rem 0 0;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .feedback-success {
+            text-align: center;
+            padding: 2rem;
+        }
+        .checkmark {
+            width: 56px;
+            height: 56px;
+            display: block;
+            margin: 0 auto 1.5rem;
+        }
+        .checkmark-circle {
+            stroke: #4CAF50;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+        .checkmark-check {
+            stroke: #4CAF50;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.4s 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+        @keyframes stroke {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Feedback UI Example</h1>
+    <p>This is a simple example of a feedback widget that can be used to collect user feedback.</p>
+    <p>Click the button below to open the feedback form.</p>
+    <!-- Feedback Widget HTML -->
+    <div id="feedback-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;"></div>
+    <button id="open-feedback-btn" style="position: fixed; bottom: 90px; right: 20px; z-index: 1000;">Open Feedback</button>
+    <script>
+        // Emoji options for feedback
+        const emojis = [
+            { value: 5, label: "Very Satisfied", emoji: "😍" },
+            { value: 4, label: "Satisfied", emoji: "😊" },
+            { value: 3, label: "Average", emoji: "😐" },
+            { value: 2, label: "Not Satisfied", emoji: "😞" },
+            { value: 1, label: "Worst", emoji: "😡" }
+        ];
+
+        document.getElementById('open-feedback-btn').onclick = function() {
+            showFeedbackForm();
+            this.style.display = 'none';
+        };
+
+        function showFeedbackForm() {
+            const widget = document.getElementById('feedback-widget');
+            widget.innerHTML = `
+                <div class="feedback-container">
+                    <form class="feedback-form">
+                        <div class="feedback-title">How do you feel about your experience?</div>
+                        <div class="rating-container">
+                            ${emojis.map(e => `
+                                <div>
+                                    <button type="button" class="emoji-btn" data-value="${e.value}" title="${e.label}">${e.emoji}</button>
+                                    <span class="emoji-label">${e.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <textarea class="feedback-textarea" placeholder="Any additional comments? (optional)" rows="4"></textarea>
+                        <div class="feedback-error" style="display:none"></div>
+                        <button type="submit" class="feedback-submit">Submit Feedback</button>
+                    </form>
+                </div>
+            `;
+
+            let rating = 0;
+            let hover = 0;
+            const emojiBtns = widget.querySelectorAll('.emoji-btn');
+            const errorDiv = widget.querySelector('.feedback-error');
+            const submitBtn = widget.querySelector('.feedback-submit');
+            const form = widget.querySelector('.feedback-form');
+
+            emojiBtns.forEach((btn, idx) => {
+                btn.addEventListener('mouseenter', () => {
+                    hover = emojis[idx].value;
+                    updateEmojis();
+                });
+                btn.addEventListener('mouseleave', () => {
+                    hover = 0;
+                    updateEmojis();
+                });
+                btn.addEventListener('click', () => {
+                    rating = emojis[idx].value;
+                    updateEmojis();
+                });
+            });
+
+            function updateEmojis() {
+                emojiBtns.forEach((btn, idx) => {
+                    btn.classList.toggle('active', emojis[idx].value === rating);
+                    btn.classList.toggle('hovered', hover && emojis[idx].value === hover);
+                });
+            }
+
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                errorDiv.style.display = 'none';
+                if (rating === 0) {
+                    errorDiv.textContent = 'Please select how you feel';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+                setTimeout(() => {
+                    widget.innerHTML = `
+                        <div class="feedback-container feedback-success">
+                            <svg class="checkmark" viewBox="0 0 52 52">
+                                <circle class="checkmark-circle" cx="26" cy="26" r="25" />
+                                <path class="checkmark-check" fill="none" d="M14 27l7 7 16-16"/>
+                            </svg>
+                            <h3>Thank you for your feedback!</h3>
+                            <p>We appreciate you taking the time to share your experience with us.</p>
+                        </div>
+                    `;
+                },1000);
+            };  
+        }
+    </script>
+</body>
+</html>
